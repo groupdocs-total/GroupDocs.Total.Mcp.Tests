@@ -1,0 +1,51 @@
+# GroupDocs.Total.Mcp.Tests
+
+Integration tests and deployment how-to guides for GroupDocs.Total.Mcp — the MCP server that exposes GroupDocs.Total for .NET to AI agents (Claude, Cursor, VS Code / GitHub Copilot, and other MCP-compatible clients).
+
+This repo validates the **published NuGet artifact** end-to-end and doubles as a reference for using it from every supported channel.
+
+## Primary repository
+
+- MCP server source + package: https://github.com/groupdocs-total/GroupDocs.Total.Mcp
+- NuGet package: https://www.nuget.org/packages/GroupDocs.Total.Mcp
+- Docker images: ghcr.io/groupdocs-total/total-net-mcp and docker.io/groupdocs/total-net-mcp
+
+## Deployment channels covered by how-to guides
+
+- how-to/01-install-from-nuget.md — dnx (recommended) + global dotnet tool
+- how-to/02-run-via-docker.md — container image + docker-compose
+- how-to/03-verify-mcp-registry.md — MCP registry discovery and NuGet.org auto-generated mcp.json
+- how-to/04-use-with-claude-desktop.md — Claude Desktop stdio config
+- how-to/05-use-with-vscode-copilot.md — VS Code / GitHub Copilot config with prompt-string inputs
+- how-to/06-run-integration-tests.md — run this repo's test suite locally and in CI
+
+## MCP tools exposed by the server
+
+- AddAnnotation — add a textfield / area / point / arrow / highlight / underline / strikeout annotation; saves as `<name>_annotated.<ext>`
+- GetAnnotations — list all annotations as JSON (id, type, message, page, box, user, replies)
+- UpdateAnnotation — modify an existing annotation's message and/or bounding box by id
+- RemoveAnnotations — remove annotations by id list, or all
+- AddReply — add a reply to an existing annotation
+- RemoveReplies — remove replies by reply-id list, by user name, or all
+- ImportAnnotations — import annotations from an XML file or another annotated document
+- ExportAnnotations — extract annotations to XML (re-importable via ImportAnnotations)
+- GetDocumentInfo — return file type, page count, size, and per-page dimensions as JSON (read-only)
+- GeneratePagesPreview — render up to 5 pages as inline PNG image content blocks (annotations baked in)
+
+## Environment variables
+
+- GROUPDOCS_MCP_STORAGE_PATH — base folder for input + output (defaults to current working directory)
+- GROUPDOCS_MCP_OUTPUT_PATH — optional, routes output files to a separate folder
+- GROUPDOCS_LICENSE_PATH — path to GroupDocs.Total.lic; omit for evaluation mode (output may carry watermarks)
+
+## Key facts for AI agents
+
+- Testing the shipped NuGet, not the source. No project reference to the server.
+- Tool names on the wire follow the MCP SDK's chosen casing (PascalCase or snake_case depending on SDK version). ToolCatalog resolvers use keyword substrings that work under both.
+- All 10 tools function in evaluation mode — `AddAnnotation` / `UpdateAnnotation` etc. add a `[Evaluation mode]` prefix and may add an extra watermark to the saved output. Set `GROUPDOCS_LICENSE_PATH` to get watermark-free output.
+- Real samples are committed under `Files/` (copied from the upstream `GroupDocs.Total-for-.NET` examples repo). The synthetic blank PDF and 1×1 JPEG are built from byte arrays at test startup.
+- Target framework is net10.0 only. Requires .NET 10 SDK for dnx.
+
+## License
+
+MIT — see LICENSE
