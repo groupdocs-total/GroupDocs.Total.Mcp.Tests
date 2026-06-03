@@ -1,0 +1,9 @@
+services:
+  groupdocs-total-mcp:
+    image: ghcr.io/groupdocs-total/total-net-mcp:latest
+    stdin_open: true
+    tty: false
+    environment:
+      GROUPDOCS_MCP_STORAGE_PATH: /data
+    volumes:
+      - ./documents:/data
