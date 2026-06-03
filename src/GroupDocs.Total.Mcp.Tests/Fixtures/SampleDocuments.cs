@@ -1,0 +1,144 @@
+using System.Text;
+
+namespace GroupDocs.Total.Mcp.IntegrationTests.Fixtures;
+
+/// Builds tiny, self-contained fixture documents on disk so tests don't require
+/// committed binary files, and copies any real sample files committed under the
+/// repo's `Files/` folder into the same storage directory so tests can cover
+/// real formats too.
+internal static class SampleDocuments
+{
+    // Synthetic fixtures — a minimal blank PDF the engine can annotate
+    // (annotations rasterised onto the page) and a 1×1 baseline JPEG.
+    public const string BlankPdf  = "blank.pdf";
+    public const string PlainJpeg = "photo.jpg";
+
+    // Real samples committed under Files/ — copied verbatim from the upstream
+    // GroupDocs.Total-for-.NET examples repo (Examples/.../SampleFiles/).
+    public const string InputPdf            = "input.pdf";
+    public const string InputDocx           = "input.docx";
+    public const string InputXlsx           = "input.xlsx";
+    public const string AnnotatedPdf        = "annotated.pdf";
+    public const string AnnotatedDocx       = "annotated.docx";
+    public const string AnnotatedWithReplies = "annotated_with_replies.pdf";
+    public const string AnnotationsXml      = "annotation.xml";
+
+    public static IReadOnlyList<string> RealSamples { get; } = new[]
+    {
+        InputPdf, InputDocx, InputXlsx, AnnotatedPdf, AnnotatedDocx, AnnotatedWithReplies, AnnotationsXml,
+    };
+
+    public static void WriteAll(string directory)
+    {
+        Directory.CreateDirectory(directory);
+        File.WriteAllBytes(Path.Combine(directory, BlankPdf),  BuildBlankPdf());
+        File.WriteAllBytes(Path.Combine(directory, PlainJpeg), MinimalJpeg);
+    }
+
+    /// Copies real sample files (those in RealSamples) from the resolved source
+    /// directory into the test storage directory. Files not present in the source
+    /// are skipped — the corresponding tests detect absence and skip themselves.
+    public static void CopyRealSamples(string targetDirectory, string? sourceDirectory)
+    {
+        if (string.IsNullOrEmpty(sourceDirectory) || !Directory.Exists(sourceDirectory))
+            return;
+
+        Directory.CreateDirectory(targetDirectory);
+        foreach (var name in RealSamples)
+        {
+            var src = Path.Combine(sourceDirectory, name);
+            if (File.Exists(src))
+                File.Copy(src, Path.Combine(targetDirectory, name), overwrite: true);
+        }
+    }
+
+    /// Resolves the source folder containing real sample files. Order:
+    ///   1. GROUPDOCS_MCP_SAMPLE_DOCS env var (set by docker-compose mount).
+    ///   2. `Files/` next to the test assembly — populated by the csproj
+    ///      `<None Include="..\..\Files\**\*">` copy item.
+    ///   3. Walk up from the assembly to find the repo's `Files/`.
+    public static string? ResolveSourceSampleDocs()
+    {
+        var env = Environment.GetEnvironmentVariable("GROUPDOCS_MCP_SAMPLE_DOCS");
+        if (!string.IsNullOrEmpty(env) && Directory.Exists(env))
+            return env;
+
+        var staged = Path.Combine(AppContext.BaseDirectory, "Files");
+        if (Directory.Exists(staged))
+            return staged;
+
+        var dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 10 && !string.IsNullOrEmpty(dir); i++)
+        {
+            var candidate = Path.Combine(dir, "Files");
+            if (Directory.Exists(candidate))
+                return candidate;
+            dir = Path.GetDirectoryName(dir);
+        }
+
+        return null;
+    }
+
+    /// Minimal PDF 1.4 with one blank page. Engine can rasterise signatures onto
+    /// the page; xref offsets are computed byte-accurately.
+    private static byte[] BuildBlankPdf()
+    {
+        var body = new StringBuilder();
+        var offsets = new List<int>();
+
+        void WriteObj(string obj)
+        {
+            offsets.Add(body.Length);
+            body.Append(obj);
+        }
+
+        body.Append("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+
+        WriteObj("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+        WriteObj("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+        WriteObj("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>\nendobj\n");
+
+        var xrefOffset = body.Length;
+        body.Append("xref\n0 4\n0000000000 65535 f \n");
+        foreach (var offset in offsets)
+            body.Append($"{offset:D10} 00000 n \n");
+
+        body.Append("trailer\n<< /Size 4 /Root 1 0 R >>\n");
+        body.Append($"startxref\n{xrefOffset}\n%%EOF");
+
+        return Encoding.ASCII.GetBytes(body.ToString());
+    }
+
+    /// 1×1 baseline JPEG — minimal valid stream, no EXIF.
+    private static readonly byte[] MinimalJpeg =
+    [
+        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+        0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43,
+        0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08, 0x07, 0x07, 0x07, 0x09,
+        0x09, 0x08, 0x0A, 0x0C, 0x14, 0x0D, 0x0C, 0x0B, 0x0B, 0x0C, 0x19, 0x12,
+        0x13, 0x0F, 0x14, 0x1D, 0x1A, 0x1F, 0x1E, 0x1D, 0x1A, 0x1C, 0x1C, 0x20,
+        0x24, 0x2E, 0x27, 0x20, 0x22, 0x2C, 0x23, 0x1C, 0x1C, 0x28, 0x37, 0x29,
+        0x2C, 0x30, 0x31, 0x34, 0x34, 0x34, 0x1F, 0x27, 0x39, 0x3D, 0x38, 0x32,
+        0x3C, 0x2E, 0x33, 0x34, 0x32, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01,
+        0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00,
+        0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0xFF, 0xC4, 0x00, 0xB5, 0x10, 0x00, 0x02, 0x01, 0x03,
+        0x03, 0x02, 0x04, 0x03, 0x05, 0x05, 0x04, 0x04, 0x00, 0x00, 0x01, 0x7D,
+        0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12, 0x21, 0x31, 0x41, 0x06,
+        0x13, 0x51, 0x61, 0x07, 0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xA1, 0x08,
+        0x23, 0x42, 0xB1, 0xC1, 0x15, 0x52, 0xD1, 0xF0, 0x24, 0x33, 0x62, 0x72,
+        0x82, 0x09, 0x0A, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x25, 0x26, 0x27, 0x28,
+        0x29, 0x2A, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x43, 0x44, 0x45,
+        0x46, 0x47, 0x48, 0x49, 0x4A, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59,
+        0x5A, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x73, 0x74, 0x75,
+        0x76, 0x77, 0x78, 0x79, 0x7A, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89,
+        0x8A, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0xA2, 0xA3,
+        0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6,
+        0xB7, 0xB8, 0xB9, 0xBA, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9,
+        0xCA, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xE1, 0xE2,
+        0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xF1, 0xF2, 0xF3, 0xF4,
+        0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01,
+        0x00, 0x00, 0x3F, 0x00, 0xFB, 0xD0, 0xFF, 0xD9
+    ];
+}
