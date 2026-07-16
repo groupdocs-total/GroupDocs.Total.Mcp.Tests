@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "groupdocs-total": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "/absolute/path/to/documents:/data",
+        "ghcr.io/groupdocs-total/total-net-mcp:26.7.0"
+      ],
+      "env": {
+        "GROUPDOCS_LICENSE_PATH": "/data/GroupDocs.Total.lic"
+      }
+    }
+  }
+}
