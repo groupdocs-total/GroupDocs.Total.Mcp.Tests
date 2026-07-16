@@ -28,7 +28,7 @@ Windows and `~/.dotnet/dnx` on Linux/macOS.
 ## Option 1 — dnx (recommended)
 
 ```bash
-dnx GroupDocs.Total.Mcp@26.5.0 --yes
+dnx GroupDocs.Total.Mcp@26.7.0 --yes
 ```
 
 The first invocation downloads the package into the NuGet cache; subsequent
@@ -44,7 +44,7 @@ dnx GroupDocs.Total.Mcp --yes                # latest stable, refreshed every ru
 dnx GroupDocs.Total.Mcp --prerelease --yes   # latest including pre-releases
 ```
 
-| | Pinned (`@26.5.0`) | Unpinned |
+| | Pinned (`@26.7.0`) | Unpinned |
 |---|---|---|
 | Use for | Client configs committed to repos, CI, shared team setups | Quick local smoke tests, dev machines that should track latest |
 | Reproducibility | identical version on every machine / session | depends on when each machine first pulled |
@@ -52,7 +52,7 @@ dnx GroupDocs.Total.Mcp --prerelease --yes   # latest including pre-releases
 | Risk of unexpected breakage | low | a release that renames a tool / changes a schema will surprise you mid-session |
 | Startup time on day-of-release | instant from cache | +1–10s for the version probe + download |
 
-> **`dnx` does not support npm-style ranges** (`^26.4`, `~26.5.0`). It's pinned-exact
+> **`dnx` does not support npm-style ranges** (`^26.4`, `~26.7.0`). It's pinned-exact
 > or latest-stable — nothing in between. If you want a floor without bumping
 > on every release, you'll need to update the pinned value manually.
 
@@ -85,7 +85,7 @@ Pipe an `initialize` + `tools/list` sequence to see the advertised tools:
   echo '{"jsonrpc":"2.0","method":"notifications/initialized"}'
   echo '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
   sleep 2
-) | GROUPDOCS_MCP_STORAGE_PATH=./docs dnx GroupDocs.Total.Mcp@26.5.0 --yes
+) | GROUPDOCS_MCP_STORAGE_PATH=./docs dnx GroupDocs.Total.Mcp@26.7.0 --yes
 ```
 
 You should see two JSON-RPC responses listing the 10 advertised tools (add_annotation, get_annotations, …).
@@ -127,7 +127,7 @@ Set via environment variables when launching:
 ```bash
 GROUPDOCS_MCP_STORAGE_PATH=/data/documents \
 GROUPDOCS_LICENSE_PATH=/secrets/GroupDocs.Total.lic \
-dnx GroupDocs.Total.Mcp@26.5.0 --yes
+dnx GroupDocs.Total.Mcp@26.7.0 --yes
 ```
 
 ## Native prerequisites
@@ -166,7 +166,7 @@ The server's `initialize` response includes `serverInfo.version`. With an MCP
 client:
 
 ```text
-initialize response → serverInfo: { name: "GroupDocs.Total.Mcp", version: "26.5.0" }
+initialize response → serverInfo: { name: "GroupDocs.Total.Mcp", version: "26.7.0" }
 ```
 
 This value comes from the published assembly's `AssemblyInformationalVersion`
